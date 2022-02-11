@@ -1,0 +1,11 @@
+$numOverlaps
+P-value: 0.000999000999000999
+Z-score: 279.504
+Number of iterations: 1000
+Alternative: greater
+Evaluation of the original region set: 17255
+Evaluation function: numOverlaps
+Randomization function: randomizeRegions
+
+attr(,"class")
+[1] "permTestResultsList"

@@ -1,0 +1,3 @@
+1d71f50986bbae8f6dd2e533169fcecf  GSE133379_293T-G4P-hg19-rep1.narrowPeak.gz
+a91cd3e86e942cc12b8d9c2ee427e2a0  GSM2825571_ENCFF072ERX_peaks_hg19.bed.gz
+a314e2eabcb0f02dbf3726eea6883f47  human.hg19.genome

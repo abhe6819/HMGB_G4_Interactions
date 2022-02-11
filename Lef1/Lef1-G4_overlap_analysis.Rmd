@@ -1,0 +1,103 @@
+---
+title: "Lef1-G4_overlap_analysis"
+author: "Abigail E Hein"
+date: "2/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+library(ggplot2)
+library(BSgenome.Hsapiens.UCSC.hg19)
+library(GenomicRanges)
+library(ChIPpeakAnno)
+library(regioneR)
+library(ChIPseeker)
+library(viridis)
+library(VennDiagram)
+library(extrafont)
+```
+
+## Read datasets into R
+
+```{r}
+Lef1Sites <- toGRanges("col1-6_sorted_lef1_293T_chipSeq.bed")
+Lef1SitesSeq <- readDNAStringSet("lef1_293T_chipSeq.fa", format = "fasta")
+G4Sites <- toGRanges("col1-6_sorted_G4P_293T_chipSeq.bed")
+G4SitesSeq <- readDNAStringSet("G4P_293T_chipSeq.fa", format = "fasta")
+IntersectedSites <- toGRanges("col1-6_sorted_int_lef1-G4P_293T.bed")
+IntersectedSitesSeq <- readDNAStringSet("Int_lef1_G4P_293T.fa", format = "fasta")
+```
+
+## Hypergeometric significance test
+  phyper values take from bedtools fisher output
+  p < 1e-21000
+
+```{r}
+phyper(17255 - 1, 300000, 4564806 - 300000, 40788, lower.tail=F, log.p = T)
+```
+## Compare dataset distributions
+
+```{r}
+lefwidth <- Lef1Sites@ranges@width
+g4width <- G4Sites@ranges@width
+intwidth <- IntersectedSites@ranges@width
+
+print("Mean Lef1 site length:")
+mean(lefwidth)
+print("Mean G4 site length:")
+mean(g4width)
+print("Mean Lef1-G4 site length:")
+mean(intwidth)
+
+means <- c(mean(lefwidth), mean(g4width), mean(intwidth))
+n <- max(length(lefwidth), length(g4width), length(intwidth))
+length(lefwidth) <- n
+length(g4width) <- n
+length(intwidth) <- n
+rangeWidth <- cbind.data.frame(lefwidth, intwidth, g4width)
+rangeWidth_long <- gather(rangeWidth, dataset, width, lefwidth:g4width)
+ggplot(rangeWidth_long, aes(x=dataset, y=width, fill = dataset))+
+  #geom_jitter(size=0.1, alpha=0.1)+
+  geom_boxplot(alpha = 0.6, width = 0.6)+
+  scale_fill_viridis(option="plasma", discrete = T, alpha = 0.9)+
+  theme_minimal()+
+  theme(legend.position="none")+
+  xlab("Dataset")+
+  ylab("ChIP Peak Width [bp]")
+  
+
+ggplot(rangeWidth_long, aes(x = width, fill = dataset))+
+  geom_histogram(position = "identity", alpha = 0.25, bins = 35)+
+  scale_y_sqrt(labels=scales::comma)+
+  theme_minimal()+
+  scale_fill_discrete(name = "Dataset", labels = c("G4", "Lef1-G4", "Lef1"))+
+  xlab("ChIP Peak Width [bp]")+
+  ylab("Frequency")
+```
+
+## Consensus sequence enrichment analysis
+
+```{r}
+lefConsSeq <- length(grep("TCAAAG|AGTTTC|GAAACT|CTTTGA", Lef1SitesSeq))
+print(lefConsSeq)
+lefConsSeq/length(Lef1SitesSeq)
+IntConsSeq <- length(grep("TCAAAG|AGTTTC|GAAACT|CTTTGA", IntersectedSitesSeq))
+print(IntConsSeq)
+IntConsSeq/length(IntersectedSitesSeq)
+matrix <- cbind(c(lefConsSeq, (length(Lef1SitesSeq)-lefConsSeq)), c(IntConsSeq, length(IntersectedSitesSeq)-IntConsSeq))
+print(matrix)
+fisher.test(matrix)
+```
+
+## Boosted overlap length
+
+
+```{r}
+sum(IntersectedSitesSeq@ranges@width >= 15)
+grid.newpage()
+draw.pairwise.venn(length(Lef1Sites), length(G4Sites), length(IntersectedSites), c("Lef1 ChIP Sites" , "G4 ChIP Sites"), lwd = 2, lty = 'blank', fill= c('#feb24c', '#800026'), fontfamily ="Arial", main.fontfamily="sans-serif", cat.default.pos = "outer", cat.fontfamily ="Arial", cat.fontface = "bold", cat.dist = c(0.045, 0.045), cat.pos = c(-7,7))
+```
+
+
