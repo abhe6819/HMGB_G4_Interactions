@@ -1,0 +1,97 @@
+
+R version 3.6.0 (2019-04-26) -- "Planting of a Tree"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-redhat-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(pqsfinder)
+Loading required package: Biostrings
+Loading required package: BiocGenerics
+Loading required package: parallel
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+    clusterExport, clusterMap, parApply, parCapply, parLapply,
+    parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    union, unique, unsplit, which, which.max, which.min
+
+Loading required package: S4Vectors
+Loading required package: stats4
+
+Attaching package: ‘S4Vectors’
+
+The following object is masked from ‘package:base’:
+
+    expand.grid
+
+Loading required package: IRanges
+Loading required package: XVector
+
+Attaching package: ‘Biostrings’
+
+The following object is masked from ‘package:base’:
+
+    strsplit
+
+> library(stringi)
+> library(Biostrings)
+> dna <- readDNAStringSet("../lef1_293T_chipSeq.fa", format = "fasta")
+> print("No. Lef1 sequences:")
+[1] "No. Lef1 sequences:"
+> length(dna)
+[1] 300000
+> set.seed(15)
+> shuffledDNA <- stri_rand_shuffle(dna)
+> shuffledDNA <- DNAStringSet(shuffledDNA)
+> print("No. shuffled sequences:")
+[1] "No. shuffled sequences:"
+> length(shuffledDNA)
+[1] 300000
+> 
+> shuffledWinners <- vector()
+> numShuffledWinners <- 0
+> 
+> for(ii in 1:length(shuffledDNA)) {
++   pqs <- pqsfinder(shuffledDNA[[ii]], min_score = 25)
++   dss <- as(pqs, "DNAStringSet")
++   if (length(pqs@elementMetadata@listData[["score"]]) > 0) {
++     numShuffledWinners <- numShuffledWinners +1
++     shuffledWinners[numShuffledWinners] <- ii
++   }
++ }
+> print("Number of random GQ's: " )
+[1] "Number of random GQ's: "
+> print(numShuffledWinners)
+[1] 107862
+> 
+> proc.time()
+    user   system  elapsed 
+8851.168   31.102 8889.832 

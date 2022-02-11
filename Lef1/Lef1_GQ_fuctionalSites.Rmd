@@ -1,0 +1,149 @@
+---
+title: "Lef1_GQ_fuctionalSites"
+author: "Abigail E Hein"
+date: "2/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pqsfinder)
+library(Biostrings)
+library(ggplot2)
+library(tidyr)
+library(RColorBrewer)
+library(ChIPpeakAnno)
+library(regioneR)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(ChIPseeker)
+library(ReactomePA)
+library(org.Hs.eg.db)
+```
+
+
+
+```{r}
+Lef1Sites <- toGRanges("col1-6_sorted_lef1_293T_chipSeq.bed")
+G4Sites <- toGRanges("col1-6_sorted_G4P_293T_chipSeq.bed")
+IntersectedSites <- toGRanges("col1-6_sorted_int_lef1-G4P_293T.bed")
+IntersectedSitesSeq <- readDNAStringSet("Int_lef1_G4P_293T.fa", format = "fasta")
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+
+#pqsFinder on enhancer regions
+# load gene annotation from UCSC for human genome build hg19
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene #shortcut
+
+# get all genes from the data base as GRanges object
+genes <- genes(txdb)
+
+# take the the region around the gene start as promoter
+prom <- promoters(genes, upstream=1000, downstream=100)
+
+#annotate sox2-G4 peaks
+lefAnno <- annotatePeak(Lef1Sites, TxDb=TxDb.Hsapiens.UCSC.hg19.knownGene)
+plotAnnoPie(lefAnno)
+lefG4anno <- annotatePeak(IntersectedSites, TxDb=TxDb.Hsapiens.UCSC.hg19.knownGene)
+plotAnnoPie(lefG4anno)
+G4anno <- annotatePeak(G4Sites, TxDb=TxDb.Hsapiens.UCSC.hg19.knownGene)
+plotAnnoPie(G4anno)
+```
+
+## Pathway entichment
+```{r}
+#enrichment analysis
+enrichmentResults <- enrichPathway(lefG4anno@anno$geneId)
+dotplot(enrichmentResults)
+emapplot(enrichmentResults, color = "pvalue")
+enrichmentLeef <- enrichPathway(lefAnno@anno$geneId)
+dotplot(enrichmentLeef)
+#emapplot(enrichmentLeef, color = "pvalue")
+```
+
+## Lef-G4 promoter distributions
+  We search for overlap between ER peaks and promoters
+
+```{r}
+lefG4_prom_overlap_subset <- subset(lefG4anno, lefG4anno@anno$annotation== "Promoter (<=1kb)")
+write.table(lefG4_prom_overlap_subset, "lefG4_prom_overlap.bed", quote = F, row.names = F, col.names = F, sep="\t")
+```
+
+
+## Convert promoter hits to fasta w/ bedtools
+
+
+```{bash engine.opts='-l'}
+
+```
+
+
+
+```{r}
+soxG4_prom_seq <- readDNAStringSet("soxGQ_H1_prom_int.fa", format = "fasta")
+soxG4_prom_overlap_subset_bed <- read.table("soxG4_prom_overlap.bed", sep = "\t")
+colnames(soxG4_prom_overlap_subset_bed) <- c("peakChr", "peakStart", "peakEnd", "peakLength", "peakStrand", "peakName", "score", "annotation", "geneChr", "geneStart", "geneEnd", "geneLength", "geneStrand", "geneId", "transcriptId", "distanceToTSS")
+
+
+#pqsFinder on promoter regions
+winnersI <- vector()
+numWinnersI <- 0
+numWinnerSites <- 0
+winnersIscore <-data.frame(score= integer(), OG_file_row=numeric())
+
+for(ii in 1:length(soxG4_prom_seq)) {
+  pqs <- pqsfinder(soxG4_prom_seq[[ii]], min_score = 25)
+  dss <- as(pqs, "DNAStringSet")
+  if (length(pqs@elementMetadata@listData[["score"]]) > 0) {
+    numWinnerSites <- numWinnerSites +1
+    numWinnersI <- numWinnersI + length(pqs@elementMetadata@listData[["score"]])
+    winnersI[numWinnerSites] <- ii
+    hit <- data.frame(pqs@elementMetadata@listData[["score"]], rep(ii, length(pqs@elementMetadata@listData[["score"]])))
+    winnersIscore <-  rbind(winnersIscore, hit)
+  }
+  writeXStringSet(dss, file = "pred_GQ_prom.txt", format = "fasta", append = T)
+}
+
+colnames(winnersIscore) <- c("score", "og_df_row")
+winnersIscore <- cbind(winnersIscore, seq(1:length(winnersIscore$score)))
+colnames(winnersIscore) <- c("score", "og_df_row", "winnerNo")
+winnersIscore <- winnersIscore[order(winnersIscore$winnerNo),]
+
+
+
+filt <- GRanges()
+soxG4_prom_overlap_subset_GR <- toGRanges(soxG4_prom_overlap_subset_bed)
+for(ii in 1:length(winnersIscore[,2])) {
+  print(ii)
+  filt <- append(filt, soxG4_prom_overlap_subset_GR[winnersIscore[ii,2],])
+}
+write.table(filt, "G4prom_sox.txt", row.names = F, quote = F, sep = "\t")
+#fasta file name: "soxGQ_H1_prom_int_doubleVerified.fa"
+
+# take only unique ids
+gene.ids <- unique(filt$geneId)
+
+# write names to an output file
+write.table(gene.ids, file="Sox2G4_regulated_genes.txt", quote=FALSE, row.names=FALSE, col.names=FALSE)
+
+write.csv(winnersIscore, "soxGQ_promoters.csv", row.names = F)
+G4atProm.Hits.broad = findOverlaps(sox, prom)
+```
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

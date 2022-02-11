@@ -1,0 +1,89 @@
+---
+title: "Lef1_pqs_analysis"
+author: "Abigail E Hein"
+date: "2/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pqsfinder)
+library(stringi)
+library(Biostrings)
+library(ggplot2)
+library(tidyr)
+library(RColorBrewer)
+```
+
+
+
+## Lef1 and shuffled Lef1 datasets
+
+
+```{r}
+dna <- readDNAStringSet("lef1_293T_chipSeq.fa", format = "fasta")
+print("No. Lef1 sequences:")
+length(dna)
+set.seed(15)
+shuffledDNA <- stri_rand_shuffle(dna)
+shuffledDNA <- DNAStringSet(shuffledDNA)
+print("No. shuffled sequences:")
+length(shuffledDNA)
+```
+
+## predict number of G4s
+  Number of random GQ's: 107862
+  Number of predicted GQ's: 168681
+```{r}
+winners <- vector()
+numWinners <- 0
+
+for(ii in 1:length(dna)) {
+  pqs <- pqsfinder(dna[[ii]], min_score = 25)
+  dss <- as(pqs, "DNAStringSet")
+  if (length(pqs@elementMetadata@listData[["score"]]) > 0) {
+    numWinners <- numWinners +1
+    winners[numWinners] <- ii
+  }
+}
+
+shuffledWinners <- vector()
+numShuffledWinners <- 0
+
+for(ii in 1:length(shuffledDNA)) {
+  pqs <- pqsfinder(shuffledDNA[[ii]], min_score = 25)
+  dss <- as(pqs, "DNAStringSet")
+  if (length(pqs@elementMetadata@listData[["score"]]) > 0) {
+    numShuffledWinners <- numShuffledWinners +1
+    shuffledWinners[numShuffledWinners] <- ii
+  }
+}
+print("Number of predicted GQ's: " )
+print(numWinners)
+print("Number of random GQ's: " )
+print(numShuffledWinners)
+```
+
+
+## Stats
+
+```{r}
+HitCount <- c(numWinners, numShuffledWinners)
+numWinComb <- data.frame(cbind(numWinners, numShuffledWinners))
+colnames(numWinComb) <- c("Lef1 Sites", "shuffled Sites")
+rownames(numWinComb) <- "Count"
+prop.test(HitCount, rep(length(dna),2))
+propsLong <-gather(numWinComb, countType, count, `Lef1 Sites`:`shuffled Sites`)
+```
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+ggplot(propsLong, aes(y= count, x=countType, fill=countType)) + 
+  geom_bar(stat = "identity", width = 0.9)+
+  theme_minimal()+
+  scale_fill_brewer(palette = "Reds", direction=-1)
+```
