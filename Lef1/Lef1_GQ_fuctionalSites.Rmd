@@ -93,6 +93,13 @@ cut -f 1-6 lefG4_prom_overlap.bed > col1-6_lefG4_prom_overlap.bed
 LefG4_prom_seq <- readDNAStringSet("Lef1GQ_H1_prom_int.fa", format = "fasta")
 lefG4_prom_overlap_subset_bed <- read.table("lefG4_prom_overlap.bed", sep = "\t", stringsAsFactors = F)
 colnames(lefG4_prom_overlap_subset_bed) <- c("peakChr", "peakStart", "peakEnd", "peakLength",  "peakStrand", "name","score", "annotation", "geneChr", "geneStart", "geneEnd", "geneLength", "geneStrand", "geneId", "transcriptId", "distanceToTSS")
+rm <- vector()
+for(ii in 1:nrow(lefG4_prom_overlap_subset_bed)) {
+  if(lefG4_prom_overlap_subset_bed[ii,4] == 1){
+    rm <- append(rm, ii)
+  }
+}
+lefG4_prom_overlap_subset_bed <- lefG4_prom_overlap_subset_bed[-c(rm),]
 
 
 #pqsFinder on promoter regions
