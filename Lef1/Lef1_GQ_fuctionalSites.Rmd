@@ -18,6 +18,8 @@ library(TxDb.Hsapiens.UCSC.hg19.knownGene)
 library(ChIPseeker)
 library(ReactomePA)
 library(org.Hs.eg.db)
+library(dplyr)
+library(annotate)
 ```
 
 
@@ -81,15 +83,16 @@ write.table(lefG4_prom_overlap_subset, "lefG4_prom_overlap.bed", quote = F, row.
 
 
 ```{bash engine.opts='-l'}
-
+bedtools getfasta -fi hg19.fa -bed lefG4_prom_overlap.bed -fo Lef1GQ_H1_prom_int.fa
+cut -f 1-6 lefG4_prom_overlap.bed > col1-6_lefG4_prom_overlap.bed
 ```
 
 
 
-```{r}
-soxG4_prom_seq <- readDNAStringSet("soxGQ_H1_prom_int.fa", format = "fasta")
-soxG4_prom_overlap_subset_bed <- read.table("soxG4_prom_overlap.bed", sep = "\t")
-colnames(soxG4_prom_overlap_subset_bed) <- c("peakChr", "peakStart", "peakEnd", "peakLength", "peakStrand", "peakName", "score", "annotation", "geneChr", "geneStart", "geneEnd", "geneLength", "geneStrand", "geneId", "transcriptId", "distanceToTSS")
+```{r include=FALSE}
+LefG4_prom_seq <- readDNAStringSet("Lef1GQ_H1_prom_int.fa", format = "fasta")
+lefG4_prom_overlap_subset_bed <- read.table("lefG4_prom_overlap.bed", sep = "\t", stringsAsFactors = F)
+colnames(lefG4_prom_overlap_subset_bed) <- c("peakChr", "peakStart", "peakEnd", "peakLength",  "peakStrand", "name","score", "annotation", "geneChr", "geneStart", "geneEnd", "geneLength", "geneStrand", "geneId", "transcriptId", "distanceToTSS")
 
 
 #pqsFinder on promoter regions
@@ -98,8 +101,8 @@ numWinnersI <- 0
 numWinnerSites <- 0
 winnersIscore <-data.frame(score= integer(), OG_file_row=numeric())
 
-for(ii in 1:length(soxG4_prom_seq)) {
-  pqs <- pqsfinder(soxG4_prom_seq[[ii]], min_score = 25)
+for(ii in 1:length(LefG4_prom_seq)) {
+  pqs <- pqsfinder(LefG4_prom_seq[[ii]], min_score = 52)
   dss <- as(pqs, "DNAStringSet")
   if (length(pqs@elementMetadata@listData[["score"]]) > 0) {
     numWinnerSites <- numWinnerSites +1
@@ -118,32 +121,29 @@ winnersIscore <- winnersIscore[order(winnersIscore$winnerNo),]
 
 
 
-filt <- GRanges()
-soxG4_prom_overlap_subset_GR <- toGRanges(soxG4_prom_overlap_subset_bed)
-for(ii in 1:length(winnersIscore[,2])) {
-  print(ii)
-  filt <- append(filt, soxG4_prom_overlap_subset_GR[winnersIscore[ii,2],])
+prom_pqs_lef1G4_hits <- data.frame(peakChr = character(), peakStart = integer(), peakEnd = integer(), peakLength = integer(), peakStrand = integer(), name = logical(), score = integer(), annotation = character(), geneChr = integer(), geneStart = integer(), geneEnd = integer(), geneLength = integer(), geneStrand = integer(), geneId = integer(), transcriptId = character(), distanceToTSS  = integer(), stringsAsFactors = F)
+for(ii in 1:nrow(winnersIscore)) {
+  prom_pqs_lef1G4_hits[ii,] <- lefG4_prom_overlap_subset_bed[winnersIscore[ii,2],]
 }
-write.table(filt, "G4prom_sox.txt", row.names = F, quote = F, sep = "\t")
-#fasta file name: "soxGQ_H1_prom_int_doubleVerified.fa"
+write.csv(prom_pqs_lef1G4_hits, "G4prom_lef1.txt", row.names = F, quote = F)
+
 
 # take only unique ids
-gene.ids <- unique(filt$geneId)
+gene.ids <- unique(prom_pqs_lef1G4_hits$geneId)
+gene.ids <- getSYMBOL(as.character(gene.ids), data='org.Hs.eg')
 
 # write names to an output file
-write.table(gene.ids, file="Sox2G4_regulated_genes.txt", quote=FALSE, row.names=FALSE, col.names=FALSE)
+write.table(gene.ids, file="lef1G4_regulated_genes.txt", quote=FALSE, row.names=FALSE, col.names=FALSE)
 
-write.csv(winnersIscore, "soxGQ_promoters.csv", row.names = F)
-G4atProm.Hits.broad = findOverlaps(sox, prom)
+write.csv(winnersIscore, "lef1GQ_promoters.csv", row.names = F)
 ```
 
 
 ## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+Lef1G4_minimized_hits <- read.table("pred_GQ_prom.txt", del=';')
+colnames(Lef1G4_minimized_hits) 
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
