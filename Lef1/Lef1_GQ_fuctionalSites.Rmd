@@ -130,10 +130,11 @@ write.csv(prom_pqs_lef1G4_hits, "G4prom_lef1.txt", row.names = F, quote = F)
 
 # take only unique ids
 gene.ids <- unique(prom_pqs_lef1G4_hits$geneId)
-gene.ids <- getSYMBOL(as.character(gene.ids), data='org.Hs.eg')
+gene.symb <- getSYMBOL(as.character(gene.ids), data='org.Hs.eg')
+gene.ids <-cbind(gene.ids, gene.symb)
 
 # write names to an output file
-write.table(gene.ids, file="lef1G4_regulated_genes.txt", quote=FALSE, row.names=FALSE, col.names=FALSE)
+write.csv(gene.ids, file="lef1G4_regulated_genes.txt", quote=FALSE, row.names=FALSE)
 
 write.csv(winnersIscore, "lef1GQ_promoters.csv", row.names = F)
 ```
