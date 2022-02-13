@@ -80,10 +80,10 @@ ggplot(rangeWidth_long, aes(x = width, fill = dataset))+
 ## Consensus sequence enrichment analysis
 
 ```{r}
-lefConsSeq <- length(grep("TCAAAG|AGTTTC|GAAACT|CTTTGA", Lef1SitesSeq))
+lefConsSeq <- length(grep("TTCAAAG|CTTTGAA|GAAACTT|AAGTTTC", Lef1SitesSeq))
 print(lefConsSeq)
 lefConsSeq/length(Lef1SitesSeq)
-IntConsSeq <- length(grep("TCAAAG|AGTTTC|GAAACT|CTTTGA", IntersectedSitesSeq))
+IntConsSeq <- length(grep("TTCAAAG|CTTTGAA|GAAACTT|AAGTTTC", IntersectedSitesSeq))
 print(IntConsSeq)
 IntConsSeq/length(IntersectedSitesSeq)
 matrix <- cbind(c(lefConsSeq, (length(Lef1SitesSeq)-lefConsSeq)), c(IntConsSeq, length(IntersectedSitesSeq)-IntConsSeq))
@@ -96,6 +96,7 @@ fisher.test(matrix)
 
 ```{r}
 sum(IntersectedSitesSeq@ranges@width >= 15)
+sum(IntersectedSitesSeq@ranges@width >= 30)
 grid.newpage()
 draw.pairwise.venn(length(Lef1Sites), length(G4Sites), length(IntersectedSites), c("Lef1 ChIP Sites" , "G4 ChIP Sites"), lwd = 2, lty = 'blank', fill= c('#feb24c', '#800026'), fontfamily ="Arial", main.fontfamily="sans-serif", cat.default.pos = "outer", cat.fontfamily ="Arial", cat.fontface = "bold", cat.dist = c(0.045, 0.045), cat.pos = c(-7,7))
 ```

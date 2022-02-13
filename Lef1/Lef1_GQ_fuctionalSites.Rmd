@@ -20,6 +20,7 @@ library(ReactomePA)
 library(org.Hs.eg.db)
 library(dplyr)
 library(annotate)
+library(DOSE)
 ```
 
 
@@ -65,8 +66,12 @@ plotAnnoPie(G4anno)
 enrichmentResults <- enrichPathway(lefG4anno@anno$geneId)
 dotplot(enrichmentResults)
 emapplot(enrichmentResults, color = "pvalue")
+erich <- setReadable(enrichmentResults, 'org.Hs.eg.db', 'ENTREZID')
+cnetplot(erich, node_label="category", cex_label_category = 1.2)
 enrichmentLeef <- enrichPathway(lefAnno@anno$geneId)
 dotplot(enrichmentLeef)
+erichL <- setReadable(enrichmentLeef, 'org.Hs.eg.db', 'ENTREZID')
+cnetplot(erichL, node_label="category", cex_label_category = 1.2)
 #emapplot(enrichmentLeef, color = "pvalue")
 ```
 
@@ -108,6 +113,7 @@ numWinnersI <- 0
 numWinnerSites <- 0
 winnersIscore <-data.frame(score= integer(), OG_file_row=numeric())
 
+#NEED TO DO THIS AT MIN=25 JUST FOR COUNT
 for(ii in 1:length(LefG4_prom_seq)) {
   pqs <- pqsfinder(LefG4_prom_seq[[ii]], min_score = 52)
   dss <- as(pqs, "DNAStringSet")

@@ -64,6 +64,26 @@ print("Number of random GQ's: " )
 print(numShuffledWinners)
 ```
 
+## Double verified GQ's
+
+
+```{r}
+IntersectedSitesSeq <- readDNAStringSet("Int_lef1_G4P_293T.fa", format = "fasta")
+
+numDoubleWinners <- 0
+
+for(ii in 1:length(IntersectedSitesSeq)) {
+  Dpqs <- pqsfinder(IntersectedSitesSeq[[ii]], min_score = 25)
+  #Ddss <- as(Dpqs, "DNAStringSet")
+  if (length(Dpqs@elementMetadata@listData[["score"]]) > 0) {
+    numDoubleWinners <-numDoubleWinners +1
+  }
+}
+
+print("Number of predicted GQ's in Lef1-G4 sites: " )
+print(numDoubleWinners)
+```
+
 
 ## Stats
 
@@ -86,4 +106,6 @@ ggplot(propsLong, aes(y= count, x=countType, fill=countType)) +
   geom_bar(stat = "identity", width = 0.9)+
   theme_minimal()+
   scale_fill_brewer(palette = "Reds", direction=-1)
+
+
 ```
