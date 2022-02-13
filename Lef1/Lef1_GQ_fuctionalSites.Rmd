@@ -154,10 +154,15 @@ write.csv(winnersIscore, "lef1GQ_promoters.csv", row.names = F)
 
 
 ## Including Plots
+```{bash}
+awk 'NR%2{printf "%s ",$0;next;}1' pred_GQ_prom.txt > pred_GQ_prom_compressed.txt
+```
+
 
 ```{r}
-Lef1G4_minimized_hits <- read.table("pred_GQ_prom.txt", del=';')
-colnames(Lef1G4_minimized_hits) 
+Lef1G4_minimized_hits <- read.table("pred_GQ_prom_compressed.txt", sep =';')
+Lef1G4_minimized_hits <- cbind(Lef1G4_minimized_hits[,3:16], prom_pqs_lef1G4_hits)
+write.csv(Lef1G4_minimized_hits, "G4prom_lef1.txt", row.names = F, quote = F)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
