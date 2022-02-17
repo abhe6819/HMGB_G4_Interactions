@@ -1,0 +1,3 @@
+17a9dcb21ebd4ab5fd04becd0fe896f9  ENCFF659WAF.bed.gz
+ba6b078755a33a1ef33d7787d46a91e0  GSE107690_K562_High_confidence_peaks.bed.gz
+806c02398f5ac5da8ffd6da2d1d5d1a9  hg19.fa.gz

@@ -10,10 +10,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Dataset Download
-Download Lef1 CHIP-seq data from GSM2825571
-  File name: GSM2825571_ENCFF072ERX_peaks_hg19.bed.gz
+Download Lef1 CHIP-seq data from ENCFF333UCS
+  File name: ENCFF333UCS.bed.gz
 Download G4P-CHIP-seq data from GSE133379
   File name: GSE133379_293T-G4P-hg19-rep1.narrowPeak.gz
+**Both** in hg19
 
   
 genome build: hg19 
@@ -24,7 +25,7 @@ genome build: hg19
 ```{bash}
 cd ~/GQ_HMGB_CHIPanalysis/Lef1
 
-wget -q https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM2825nnn/GSM2825571/suppl/GSM2825571_ENCFF072ERX_peaks_hg19.bed.gz
+wget -q https://www.encodeproject.org/files/ENCFF333UCS/@@download/ENCFF333UCS.bed.gz
 
 wget -q https://ftp.ncbi.nlm.nih.gov/geo/series/GSE133nnn/GSE133379/suppl/GSE133379_293T-G4P-hg19-rep1.narrowPeak.gz
 
@@ -36,11 +37,11 @@ gunzip *.gz
 ## Intersect Datasets
 
 ```{bash engine.opts='-l'}
-wc -l GSM2825571_ENCFF072ERX_peaks_hg19.bed
+wc -l ENCFF333UCS.bed
 
 wc -l GSE133379_293T-G4P-hg19-rep1.narrowPeak
 
-bedtools intersect -a GSM2825571_ENCFF072ERX_peaks_hg19.bed -b GSE133379_293T-G4P-hg19-rep1.narrowPeak > Int_Lef1_G4P.bed
+bedtools intersect -a ENCFF333UCS.bed -b GSE133379_293T-G4P-hg19-rep1.narrowPeak > Int_Lef1_G4P.bed
 
 wc -l Int_Lef1_G4P.bed
 ```
@@ -58,7 +59,7 @@ Minimized Bed- columns 1-6
   File name for minimized Lef1-G4P intersect: col1-6_sorted_int_lef1-G4P_293T.bed
 
 ```{bash engine.opts='-l'}
-sort -k1,1 -k2,2n GSM2825571_ENCFF072ERX_peaks_hg19.bed > sorted_lef1_293T_chipSeq.bed  
+sort -k1,1 -k2,2n ENCFF333UCS.bed > sorted_lef1_293T_chipSeq.bed  
 
 sort -k1,1 -k2,2n GSE133379_293T-G4P-hg19-rep1.narrowPeak > sorted_G4P_293T_chipSeq.narrowPeak  
 
@@ -92,7 +93,7 @@ Generated Fasta Files
   File name for sorted G4P-CHIP-seq: G4P_293T_chipSeq.fa
   File name for sorted Lef1-G4P intersect: Int_lef1_G4P_293T.fa
 ```{bash engine.opts='-l'}
-bedtools getfasta -fi hg19.fa -bed GSM2825571_ENCFF072ERX_peaks_hg19.bed -fo lef1_293T_chipSeq.fa
+bedtools getfasta -fi hg19.fa -bed ENCFF333UCS.bed -fo lef1_293T_chipSeq.fa
 
 bedtools getfasta -fi hg19.fa -bed GSE133379_293T-G4P-hg19-rep1.narrowPeak -fo G4P_293T_chipSeq.fa
 

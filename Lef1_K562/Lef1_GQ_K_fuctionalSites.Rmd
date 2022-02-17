@@ -1,0 +1,168 @@
+---
+title: "Lef1_GQ_fuctionalSites"
+author: "Abigail E Hein"
+date: "2/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(pqsfinder)
+library(Biostrings)
+library(ggplot2)
+library(tidyr)
+library(RColorBrewer)
+library(ChIPpeakAnno)
+library(regioneR)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+library(ChIPseeker)
+library(ReactomePA)
+library(org.Hs.eg.db)
+library(dplyr)
+library(annotate)
+library(DOSE)
+```
+
+
+
+```{r}
+Lef1Sites <- toGRanges("col1-6_sorted_lef1_K562_chipSeq.bed")
+G4Sites <- toGRanges("col1-6_sorted_G4P_K562_chipSeq.bed")
+IntersectedSites <- toGRanges("col1-6_sorted_int_lef1-G4P_K562.bed")
+IntersectedSitesSeq <- readDNAStringSet("Int_lef1_G4P_K562.fa", format = "fasta")
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+
+#pqsFinder on enhancer regions
+# load gene annotation from UCSC for human genome build hg19
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene #shortcut
+
+# get all genes from the data base as GRanges object
+genes <- genes(txdb)
+
+# take the the region around the gene start as promoter
+prom <- promoters(genes, upstream=1000, downstream=100)
+
+#annotate sox2-G4 peaks
+lefAnno <- annotatePeak(Lef1Sites, TxDb=TxDb.Hsapiens.UCSC.hg19.knownGene)
+plotAnnoPie(lefAnno)
+lefG4anno <- annotatePeak(IntersectedSites, TxDb=TxDb.Hsapiens.UCSC.hg19.knownGene)
+plotAnnoPie(lefG4anno)
+G4anno <- annotatePeak(G4Sites, TxDb=TxDb.Hsapiens.UCSC.hg19.knownGene)
+plotAnnoPie(G4anno)
+```
+
+## Pathway entichment
+```{r}
+#enrichment analysis
+enrichmentResults <- enrichPathway(lefG4anno@anno$geneId)
+dotplot(enrichmentResults)
+emapplot(enrichmentResults, color = "pvalue")
+erich <- setReadable(enrichmentResults, 'org.Hs.eg.db', 'ENTREZID')
+cnetplot(erich, node_label="category", cex_label_category = 1.2)
+enrichmentLeef <- enrichPathway(lefAnno@anno$geneId)
+dotplot(enrichmentLeef)
+erichL <- setReadable(enrichmentLeef, 'org.Hs.eg.db', 'ENTREZID')
+cnetplot(erichL, node_label="category", cex_label_category = 1.2)
+#emapplot(enrichmentLeef, color = "pvalue")
+```
+
+## Lef-G4 promoter distributions
+  We search for overlap between ER peaks and promoters
+
+```{r}
+lefG4_prom_overlap_subset <- subset(lefG4anno, lefG4anno@anno$annotation== "Promoter (<=1kb)")
+write.table(lefG4_prom_overlap_subset, "lefG4_prom_overlap.bed", quote = F, row.names = F, col.names = F, sep="\t")
+```
+
+
+## Convert promoter hits to fasta w/ bedtools
+
+
+```{bash engine.opts='-l'}
+bedtools getfasta -fi hg19.fa -bed lefG4_prom_overlap.bed -fo Lef1GQ_H1_prom_int.fa
+cut -f 1-6 lefG4_prom_overlap.bed > col1-6_lefG4_prom_overlap.bed
+```
+
+
+
+```{r include=FALSE}
+LefG4_prom_seq <- readDNAStringSet("Lef1GQ_H1_prom_int.fa", format = "fasta")
+lefG4_prom_overlap_subset_bed <- read.table("lefG4_prom_overlap.bed", sep = "\t", stringsAsFactors = F)
+colnames(lefG4_prom_overlap_subset_bed) <- c("peakChr", "peakStart", "peakEnd", "peakLength",  "peakStrand", "name","score", "annotation", "geneChr", "geneStart", "geneEnd", "geneLength", "geneStrand", "geneId", "transcriptId", "distanceToTSS")
+rm <- vector()
+for(ii in 1:nrow(lefG4_prom_overlap_subset_bed)) {
+  if(lefG4_prom_overlap_subset_bed[ii,4] == 1){
+    rm <- append(rm, ii)
+  }
+}
+lefG4_prom_overlap_subset_bed <- lefG4_prom_overlap_subset_bed[-c(rm),]
+
+
+#pqsFinder on promoter regions
+winnersI <- vector()
+numWinnersI <- 0
+numWinnerSites <- 0
+winnersIscore <-data.frame(score= integer(), OG_file_row=numeric())
+
+#NEED TO DO THIS AT MIN=25 JUST FOR COUNT
+for(ii in 1:length(LefG4_prom_seq)) {
+  pqs <- pqsfinder(LefG4_prom_seq[[ii]], min_score = 52)
+  dss <- as(pqs, "DNAStringSet")
+  if (length(pqs@elementMetadata@listData[["score"]]) > 0) {
+    numWinnerSites <- numWinnerSites +1
+    numWinnersI <- numWinnersI + length(pqs@elementMetadata@listData[["score"]])
+    winnersI[numWinnerSites] <- ii
+    hit <- data.frame(pqs@elementMetadata@listData[["score"]], rep(ii, length(pqs@elementMetadata@listData[["score"]])))
+    winnersIscore <-  rbind(winnersIscore, hit)
+  }
+  writeXStringSet(dss, file = "pred_GQ_prom.txt", format = "fasta", append = T)
+}
+
+colnames(winnersIscore) <- c("score", "og_df_row")
+winnersIscore <- cbind(winnersIscore, seq(1:length(winnersIscore$score)))
+colnames(winnersIscore) <- c("score", "og_df_row", "winnerNo")
+winnersIscore <- winnersIscore[order(winnersIscore$winnerNo),]
+
+
+
+prom_pqs_lef1G4_hits <- data.frame(peakChr = character(), peakStart = integer(), peakEnd = integer(), peakLength = integer(), peakStrand = integer(), name = logical(), score = integer(), annotation = character(), geneChr = integer(), geneStart = integer(), geneEnd = integer(), geneLength = integer(), geneStrand = integer(), geneId = integer(), transcriptId = character(), distanceToTSS  = integer(), stringsAsFactors = F)
+for(ii in 1:nrow(winnersIscore)) {
+  prom_pqs_lef1G4_hits[ii,] <- lefG4_prom_overlap_subset_bed[winnersIscore[ii,2],]
+}
+write.csv(prom_pqs_lef1G4_hits, "G4prom_lef1.txt", row.names = F, quote = F)
+
+
+# take only unique ids
+gene.ids <- unique(prom_pqs_lef1G4_hits$geneId)
+gene.symb <- getSYMBOL(as.character(gene.ids), data='org.Hs.eg')
+gene.ids <-cbind(gene.ids, gene.symb)
+
+# write names to an output file
+write.csv(gene.ids, file="lef1G4_regulated_genes.txt", quote=FALSE, row.names=FALSE)
+
+write.csv(winnersIscore, "lef1GQ_promoters.csv", row.names = F)
+```
+
+
+## Including Plots
+```{bash}
+awk 'NR%2{printf "%s ",$0;next;}1' pred_GQ_prom.txt > pred_GQ_prom_compressed.txt
+```
+
+
+```{r}
+Lef1G4_minimized_hits <- read.table("pred_GQ_prom_compressed.txt", sep =';')
+Lef1G4_minimized_hits <- cbind(Lef1G4_minimized_hits[,3:16], prom_pqs_lef1G4_hits)
+write.csv(Lef1G4_minimized_hits, "G4prom_lef1.csv", row.names = F, quote = F)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

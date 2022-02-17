@@ -32,10 +32,10 @@ IntersectedSitesSeq <- readDNAStringSet("Int_lef1_G4P_293T.fa", format = "fasta"
 
 ## Hypergeometric significance test
   phyper values take from bedtools fisher output
-  p < 1e-21000
+  p < 1e-8000
 
 ```{r}
-phyper(17255 - 1, 300000, 4564806 - 300000, 40788, lower.tail=F, log.p = T)
+phyper(2213 - 1, 3527, 4409653 - 3527, 40755, lower.tail=F, log.p = T)
 ```
 ## Compare dataset distributions
 
@@ -70,7 +70,7 @@ ggplot(rangeWidth_long, aes(x=dataset, y=width, fill = dataset))+
 
 ggplot(rangeWidth_long, aes(x = width, fill = dataset))+
   geom_histogram(position = "identity", alpha = 0.25, bins = 35)+
-  scale_y_sqrt(labels=scales::comma)+
+  #scale_y_sqrt(labels=scales::comma)+
   theme_minimal()+
   scale_fill_discrete(name = "Dataset", labels = c("G4", "Lef1-G4", "Lef1"))+
   xlab("ChIP Peak Width [bp]")+
@@ -95,10 +95,16 @@ fisher.test(matrix)
 
 
 ```{r}
+print("# of Lef1-G4 sites >= 15 bp")
 sum(IntersectedSitesSeq@ranges@width >= 15)
+print("Percentage of Lef1-G4 sites >= 15 bp")
+sum(IntersectedSitesSeq@ranges@width >= 15)/length(IntersectedSites)
+print("# of Lef1-G4 sites >= 30 bp")
 sum(IntersectedSitesSeq@ranges@width >= 30)
+print("Percentage of Lef1-G4 sites >= 30 bp")
+sum(IntersectedSitesSeq@ranges@width >= 30)/length(IntersectedSites)
 grid.newpage()
-draw.pairwise.venn(length(Lef1Sites), length(G4Sites), length(IntersectedSites), c("Lef1 ChIP Sites" , "G4 ChIP Sites"), lwd = 2, lty = 'blank', fill= c('#feb24c', '#800026'), fontfamily ="Arial", main.fontfamily="sans-serif", cat.default.pos = "outer", cat.fontfamily ="Arial", cat.fontface = "bold", cat.dist = c(0.045, 0.045), cat.pos = c(-7,7))
+draw.pairwise.venn(length(G4Sites), length(Lef1Sites), length(IntersectedSites), c("G4 ChIP Sites" , "Lef1 ChIP Sites"), lwd = 2, lty = 'blank', fill= c('#feb24c','#800026'), fontfamily ="Arial", main.fontfamily="sans-serif", cat.default.pos = "outer", cat.fontfamily ="Arial", cat.fontface = "bold", cat.dist = c(0.045, 0.045), cat.pos = c(-7,7))
 ```
 
 

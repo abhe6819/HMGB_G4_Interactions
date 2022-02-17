@@ -58,9 +58,9 @@ for(ii in 1:length(shuffledDNA)) {
     shuffledWinners[numShuffledWinners] <- ii
   }
 }
-print("Number of predicted GQ's: " )
+print("Number of predicted GQ sites: " )
 print(numWinners)
-print("Number of random GQ's: " )
+print("Number of random GQ sites: " )
 print(numShuffledWinners)
 ```
 
@@ -95,6 +95,17 @@ rownames(numWinComb) <- "Count"
 prop.test(HitCount, rep(length(dna),2))
 propsLong <-gather(numWinComb, countType, count, `Lef1 Sites`:`shuffled Sites`)
 ```
+
+## Venn diagram
+
+```{r}
+IntersectedSites <- toGRanges("col1-6_sorted_int_lef1-G4P_293T.bed")
+NumInVivo <- length(IntersectedSites)
+
+colorPalette <- brewer.pal(3, "PuBuGn")
+pie(c(NumInVivo-numDoubleWinners, numDoubleWinners, numWinners-numDoubleWinners), labels = c("In Vivo G4 Sites", "In Vivo and In Silico G4 Sites", "In Silico G4 Sites"), border = "white", col = c('#a6bddb','#1c9099','#ece2f0'))
+```
+
 
 
 ## Including Plots

@@ -1,0 +1,105 @@
+---
+title: "Lef1_G4P_bedtoolAnalysis"
+author: "Abigail E Hein"
+date: "2/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dataset Download
+Download Lef1 CHIP-seq data from ENCFF659WAF.bed
+  File name: ENCFF659WAF.bed.gz
+Download G4P-CHIP-seq data from GSE107690
+  File name: GSE107690_K562_High_confidence_peaks.bed.gz
+**Both** in hg19
+
+  
+genome build: hg19 
+  File name: /opt/bedtools/2.23.0/genomes/human.hg19.genome
+  hg19 fasta file name: hg19.fa 
+  
+
+```{bash}
+cd ~/GQ_HMGB_CHIPanalysis/Lef1_K562
+
+wget -q https://www.encodeproject.org/files/ENCFF659WAF/@@download/ENCFF659WAF.bed.gz
+
+wget -q https://ftp.ncbi.nlm.nih.gov/geo/series/GSE107nnn/GSE107690/suppl/GSE107690_K562_High_confidence_peaks.bed.gz
+
+md5sum *.gz > md5sums.txt
+
+gunzip *.gz
+```
+
+## Intersect Datasets
+
+```{bash engine.opts='-l'}
+wc -l ENCFF659WAF.bed
+
+wc -l GSE107690_K562_High_confidence_peaks.bed
+
+bedtools intersect -a ENCFF659WAF.bed -b GSE107690_K562_High_confidence_peaks.bed > Int_Lef1_G4P.bed
+
+wc -l Int_Lef1_G4P.bed
+
+```
+
+## Format BED files for further analysis
+BED files sorted by chromosome
+  File name for sorted Lef1 CHIP-seq: sorted_lef1_K562_chipSeq.bed
+  File name for sorted G4P-CHIP-seq: sorted_G4P_K562_chipSeq.bed
+  File name for sorted Lef1-G4P intersect: sorted_int_lef1-G4P_K562.bed
+  File name for sorted hg19 intersect: sorted_human.hg19.genome
+  
+Minimized Bed- columns 1-6
+  File name for minimized Lef1 CHIP-seq: col1-6_sorted_lef1_K562_chipSeq.bed
+  File name for minimized G4P-CHIP-seq: col1-6_sorted_G4P_K562_chipSeq.bed
+  File name for minimized Lef1-G4P intersect: col1-6_sorted_int_lef1-G4P_K562.bed
+
+```{bash engine.opts='-l'}
+sort -k1,1 -k2,2n ENCFF659WAF.bed > sorted_lef1_K562_chipSeq.bed  
+
+sort -k1,1 -k2,2n GSE107690_K562_High_confidence_peaks.bed > sorted_G4P_K562_chipSeq.bed  
+
+sort -k1,1 -k2,2n Int_Lef1_G4P.bed > sorted_int_lef1-G4P_K562.bed  
+
+sort -k1,1 -k2,2n /opt/bedtools/2.23.0/genomes/human.hg19.genome > sorted_human.hg19.genome 
+
+cut -f 1-6 sorted_lef1_K562_chipSeq.bed > col1-6_sorted_lef1_K562_chipSeq.bed
+
+cut -f 1-6 sorted_G4P_K562_chipSeq.bed > col1-6_sorted_G4P_K562_chipSeq.bed
+
+cut -f 1-6 sorted_int_lef1-G4P_K562.bed > col1-6_sorted_int_lef1-G4P_K562.bed
+
+bedtools fisher -a sorted_lef1_K562_chipSeq.bed -b sorted_G4P_K562_chipSeq.bed -g sorted_human.hg19.genome
+```
+
+## Convert BED files to fasta
+reference genome fasta file name: hg19.fa
+  md5sum= 806c02398f5ac5da8ffd6da2d1d5d1a9  hg19.fa.gz
+
+```{bash engine.opts='-l'}
+wget -q https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz
+
+echo hg19_md5sum
+md5sum hg19.fa.gz
+
+gunzip hg19.fa.gz
+```
+
+Generated Fasta Files
+  File name for sorted Lef1 CHIP-seq: lef1_K562_chipSeq.fa
+  File name for sorted G4P-CHIP-seq: G4P_K562_chipSeq.fa
+  File name for sorted Lef1-G4P intersect: Int_lef1_G4P_K562.fa
+```{bash engine.opts='-l'}
+bedtools getfasta -fi hg19.fa -bed ENCFF659WAF.bed -fo lef1_K562_chipSeq.fa
+
+bedtools getfasta -fi hg19.fa -bed GSE107690_K562_High_confidence_peaks.bed -fo G4P_K562_chipSeq.fa
+
+bedtools getfasta -fi hg19.fa -bed Int_Lef1_G4P.bed -fo Int_lef1_G4P_K562.fa
+```
+
+
