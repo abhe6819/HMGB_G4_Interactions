@@ -104,7 +104,7 @@ sum(IntersectedSitesSeq@ranges@width >= 30)
 print("Percentage of Lef1-G4 sites >= 30 bp")
 sum(IntersectedSitesSeq@ranges@width >= 30)/length(IntersectedSites)
 grid.newpage()
-draw.pairwise.venn(length(G4Sites), length(Lef1Sites), length(IntersectedSites), c("G4 ChIP Sites" , "Lef1 ChIP Sites"), lwd = 2, lty = 'blank', fill= c('#feb24c','#800026'), fontfamily ="Arial", main.fontfamily="sans-serif", cat.default.pos = "outer", cat.fontfamily ="Arial", cat.fontface = "bold", cat.dist = c(0.045, 0.045), cat.pos = c(-7,7))
+draw.pairwise.venn(length(Lef1Sites), length(G4Sites), length(IntersectedSites), c("G4 ChIP Sites" , "Lef1 ChIP Sites"), lwd = 2, lty = 'blank', fill= c('#feb24c','#800026'), fontfamily ="Arial", main.fontfamily="sans-serif", cat.default.pos = "outer", cat.fontfamily ="Arial", cat.fontface = "bold", cat.dist = c(0.045, 0.045), cat.pos = c(-7,7))
 ```
 
 

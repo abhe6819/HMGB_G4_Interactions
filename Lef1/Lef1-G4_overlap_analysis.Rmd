@@ -70,7 +70,7 @@ ggplot(rangeWidth_long, aes(x=dataset, y=width, fill = dataset))+
 
 ggplot(rangeWidth_long, aes(x = width, fill = dataset))+
   geom_histogram(position = "identity", alpha = 0.25, bins = 35)+
-  #scale_y_sqrt(labels=scales::comma)+
+  scale_y_sqrt(labels=scales::comma)+
   theme_minimal()+
   scale_fill_discrete(name = "Dataset", labels = c("G4", "Lef1-G4", "Lef1"))+
   xlab("ChIP Peak Width [bp]")+
@@ -104,7 +104,7 @@ sum(IntersectedSitesSeq@ranges@width >= 30)
 print("Percentage of Lef1-G4 sites >= 30 bp")
 sum(IntersectedSitesSeq@ranges@width >= 30)/length(IntersectedSites)
 grid.newpage()
-draw.pairwise.venn(length(G4Sites), length(Lef1Sites), length(IntersectedSites), c("G4 ChIP Sites" , "Lef1 ChIP Sites"), lwd = 2, lty = 'blank', fill= c('#feb24c','#800026'), fontfamily ="Arial", main.fontfamily="sans-serif", cat.default.pos = "outer", cat.fontfamily ="Arial", cat.fontface = "bold", cat.dist = c(0.045, 0.045), cat.pos = c(-7,7))
+draw.pairwise.venn(length(G4Sites), length(Lef1Sites), length(IntersectedSites), c("G4 ChIP Sites" , "Lef1 ChIP Sites"), lwd = 2, lty = 'blank', fill= c('#800026', '#feb24c'), fontfamily ="Arial", main.fontfamily="sans-serif", cat.default.pos = "outer", cat.fontfamily ="Arial", cat.fontface = "bold", cat.dist = c(0.045, 0.045), cat.pos = c(-7,7))
 ```
 
 
