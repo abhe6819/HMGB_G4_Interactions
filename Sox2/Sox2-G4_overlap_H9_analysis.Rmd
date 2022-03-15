@@ -1,0 +1,110 @@
+---
+title: "sox2-G4_overlap_analysis"
+author: "Abigail E Hein"
+date: "2/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+library(ggplot2)
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(GenomicRanges)
+library(ChIPpeakAnno)
+library(regioneR)
+library(ChIPseeker)
+library(viridis)
+library(VennDiagram)
+library(extrafont)
+```
+
+## Read datasets into R
+
+```{r}
+sox2Sites <- toGRanges("col1-6_sorted_sox2_H9_chipSeq.bed")
+sox2SitesSeq <- readDNAStringSet("sox2_H9_chipSeq.fa", format = "fasta")
+G4Sites <- toGRanges("col1-6_sorted_G4P_H9_chipSeq.bed")
+G4SitesSeq <- readDNAStringSet("G4P_H9_chipSeq.fa", format = "fasta")
+IntersectedSites <- toGRanges("col1-6_sorted_int_sox2-G4P_H9.bed")
+IntersectedSitesSeq <- readDNAStringSet("Int_sox2_G4P_H9.fa", format = "fasta")
+```
+
+## Hypergeometric significance test
+  phyper values take from bedtools fisher output
+  p < 1e-10000
+
+```{r}
+phyper(336 - 1, 17950, 7843048 - 17950, 2409, lower.tail=F, log.p = T)
+```
+## Compare dataset distributions
+
+```{r}
+sox2width <- sox2Sites@ranges@width
+g4width <- G4Sites@ranges@width
+intwidth <- IntersectedSites@ranges@width
+
+print("Mean sox2 site length:")
+mean(sox2width)
+print("Mean G4 site length:")
+mean(g4width)
+print("Mean sox2-G4 site length:")
+mean(intwidth)
+
+means <- c(mean(sox2width), mean(g4width), mean(intwidth))
+n <- max(length(sox2width), length(g4width), length(intwidth))
+length(sox2width) <- n
+length(g4width) <- n
+length(intwidth) <- n
+rangeWidth <- cbind.data.frame(sox2width, intwidth, g4width)
+rangeWidth_long <- gather(rangeWidth, dataset, width, sox2width:g4width)
+ggplot(rangeWidth_long, aes(x=dataset, y=width, fill = dataset))+
+  #geom_jitter(size=0.1, alpha=0.1)+
+  geom_boxplot(alpha = 0.6, width = 0.6)+
+  scale_fill_viridis(option="plasma", discrete = T, alpha = 0.9)+
+  theme_minimal()+
+  theme(legend.position="none")+
+  xlab("Dataset")+
+  ylab("ChIP Peak Width [bp]")
+  
+
+ggplot(rangeWidth_long, aes(x = width, fill = dataset))+
+  geom_histogram(position = "identity", alpha = 0.25, bins = 35)+
+  scale_y_sqrt(labels=scales::comma)+
+  theme_minimal()+
+  scale_fill_discrete(name = "Dataset", labels = c("G4", "sox2-G4", "sox2"))+
+  xlab("ChIP Peak Width [bp]")+
+  ylab("Frequency")
+```
+
+## Consensus sequence enrichment analysis
+
+```{r}
+sox2ConsSeq <- length(grep("TTGT|ACAA", sox2SitesSeq))
+print(sox2ConsSeq)
+sox2ConsSeq/length(sox2SitesSeq)
+IntConsSeq <- length(grep("TTGT|ACAA", IntersectedSitesSeq))
+print(IntConsSeq)
+IntConsSeq/length(IntersectedSitesSeq)
+matrix <- cbind(c(sox2ConsSeq, (length(sox2SitesSeq)-sox2ConsSeq)), c(IntConsSeq, length(IntersectedSitesSeq)-IntConsSeq))
+print(matrix)
+fisher.test(matrix)
+```
+
+## Boosted overlap length
+
+
+```{r}
+print("# of sox2-G4 sites >= 15 bp")
+sum(IntersectedSitesSeq@ranges@width >= 15)
+print("Percentage of sox2-G4 sites >= 15 bp")
+sum(IntersectedSitesSeq@ranges@width >= 15)/length(IntersectedSites)
+print("# of sox2-G4 sites >= 30 bp")
+sum(IntersectedSitesSeq@ranges@width >= 30)
+print("Percentage of sox2-G4 sites >= 30 bp")
+sum(IntersectedSitesSeq@ranges@width >= 30)/length(IntersectedSites)
+grid.newpage()
+draw.pairwise.venn(length(sox2Sites), length(G4Sites), length(IntersectedSites), c("sox2 ChIP Sites" , "G4 ChIP Sites"), lwd = 2, lty = 'blank', fill= c('#feb24c','#800026'), fontfamily ="Arial", main.fontfamily="sans-serif", cat.default.pos = "outer", cat.fontfamily ="Arial", cat.fontface = "bold", cat.dist = c(0.045, 0.045), cat.pos = c(-7,7))
+```
+
+

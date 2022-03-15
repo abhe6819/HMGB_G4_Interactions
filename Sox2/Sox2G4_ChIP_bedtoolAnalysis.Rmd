@@ -1,0 +1,106 @@
+---
+title: "sox2_G4P_bedtoolAnalysis"
+author: "Abigail E Hein"
+date: "2/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dataset Download
+Download Sox2 CHIP-seq data from CistromeDB 44233
+  File name: 44233_peaks.bed
+Download G4P-CHIP-seq data from GSE161531
+  File name: GSE161531_ESC.bio2out3.bed.gz
+G4 in hg38
+*both* in hg38
+
+  
+genome build: hg38
+  File name: /opt/bedtools/2.23.0/genomes/human.hg38.genome
+  hg38 fasta file name: hg38.fa 
+  
+
+```{bash}
+cd ~/GQ_HMGB_CHIPanalysis/Sox2
+
+wget -q https://ftp.ncbi.nlm.nih.gov/geo/series/GSE161nnn/GSE161531/suppl/GSE161531_ESC.bio2out3.bed.gz
+
+md5sum *.gz > md5sums.txt
+
+gunzip *.gz
+```
+
+## Intersect Datasets and remove contigs
+
+```{bash engine.opts='-l'}
+wc -l GSE161531_ESC.bio2out3.bed
+
+wc -l 44233_peaks.bed
+
+grep -v 'chrG' 44233_peaks.bed | grep -v 'chrK' | grep -v 'chrM' > soxH9_peaks_noContig.bed
+
+bedtools intersect -a GSE161531_ESC.bio2out3.bed -b  44233_peaks.bed > Int_Sox2_G4.bed
+
+wc -l Int_Sox2_G4.bed
+
+```
+
+## Format BED files for further analysis
+BED files sorted by chromosome
+  File name for sorted sox2 CHIP-seq: sorted_sox2_H9_chipSeq.bed
+  File name for sorted G4P-CHIP-seq: sorted_G4P_H9_chipSeq.bed
+  File name for sorted sox2-G4P intersect: sorted_int_sox2-G4P_H9.bed
+  File name for sorted hg38 intersect: sorted_human.hg38.genome
+  
+Minimized Bed- columns 1-6
+  File name for minimized sox2 CHIP-seq: col1-6_sorted_sox2_H9_chipSeq.bed
+  File name for minimized G4P-CHIP-seq: col1-6_sorted_G4P_H9_chipSeq.bed
+  File name for minimized sox2-G4P intersect: col1-6_sorted_int_sox2-G4P_H9.bed
+
+```{bash engine.opts='-l'}
+sort -k1,1 -k2,2n soxH9_peaks_noContig.bed > sorted_sox2_H9_chipSeq.bed  
+
+sort -k1,1 -k2,2n GSE161531_ESC.bio2out3.bed > sorted_G4P_H9_chipSeq.bed  
+
+sort -k1,1 -k2,2n Int_Sox2_G4.bed > sorted_int_sox2-G4P_H9.bed  
+
+sort -k1,1 -k2,2n /opt/bedtools/2.23.0/genomes/human.hg38.genome > sorted_human.hg38.genome 
+
+cut -f 1-6 sorted_sox2_H9_chipSeq.bed > col1-6_sorted_sox2_H9_chipSeq.bed
+
+cut -f 1-6 sorted_G4P_H9_chipSeq.bed > col1-6_sorted_G4P_H9_chipSeq.bed
+
+cut -f 1-6 sorted_int_sox2-G4P_H9.bed > col1-6_sorted_int_sox2-G4P_H9.bed
+
+bedtools fisher -a sorted_sox2_H9_chipSeq.bed -b sorted_G4P_H9_chipSeq.bed -g sorted_human.hg38.genome
+```
+
+## Convert BED files to fasta
+reference genome fasta file name: hg38.fa
+  md5sum= 1c9dcaddfa41027f17cd8f7a82c7293b  hg38.fa.gz
+
+```{bash engine.opts='-l'}
+wget -q https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+
+echo hg38_md5sum
+md5sum hg38.fa.gz
+
+gunzip hg38.fa.gz
+```
+
+Generated Fasta Files
+  File name for sorted sox2 CHIP-seq: sox2_H9_chipSeq.fa
+  File name for sorted G4P-CHIP-seq: G4P_H9_chipSeq.fa
+  File name for sorted sox2-G4P intersect: Int_sox2_G4P_H9.fa
+```{bash engine.opts='-l'}
+bedtools getfasta -fi hg38.fa -bed soxH9_peaks_noContig.bed -fo sox2_H9_chipSeq.fa
+
+bedtools getfasta -fi hg38.fa -bed GSE161531_ESC.bio2out3.bed -fo G4P_H9_chipSeq.fa
+
+bedtools getfasta -fi hg38.fa -bed Int_Sox2_G4.bed -fo Int_sox2_G4P_H9.fa
+```
+
+
